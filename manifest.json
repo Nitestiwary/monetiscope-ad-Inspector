@@ -3,7 +3,7 @@
   "name": "Monetiscope Ad Inspector",
   "short_name": "Monetiscope Ad Inspector",
   "version": "1.0.0",
-  "description": "Inspect, debug, and analyze Google Publisher Tag (GPT) ads, Google Ad Manager setup, responsive mappings, refresh behavior, and ad rendering issues.",
+  "description": "Inspect, debug, and analyze Google Publisher Tag (GPT) ads, Google Ad Manager (GAM) setups, and responsive size mappings.",
   "author": "Monetiscope",
   "permissions": [
     "storage",
