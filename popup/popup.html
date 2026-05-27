@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPT Ad Inspector and Debugger</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+  <!-- Main Container -->
+  <div class="container">
+    
+    <!-- Top Header -->
+    <header class="header">
+      <div class="header-brand">
+        <img src="../assets/icon-48.png" alt="Monetiscope Icon" class="logo">
+        <div class="brand-text">
+          <h1>Monetiscope Ad Inspector</h1>
+          <p class="brand-author">By Monetiscope</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <span id="gpt-status-badge" class="badge badge-error">GPT Checking...</span>
+      </div>
+    </header>
+
+    <!-- Scan Target Info -->
+    <div class="page-info">
+      <div class="url-container">
+        <span class="url-label">Inspecting:</span>
+        <span id="current-url" class="url-value">Scanning active page...</span>
+      </div>
+      <div class="health-container">
+        <span class="health-label">Ad Ops Health:</span>
+        <span id="health-score" class="health-score-value">--</span>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="overview">Overview</button>
+      <button class="tab-btn" data-tab="slots">Ad Slots (<span id="slots-count-tab">0</span>)</button>
+      <button class="tab-btn" data-tab="responsive">Responsive</button>
+      <button class="tab-btn" data-tab="logs">Live Logs</button>
+      <button class="tab-btn" data-tab="tools">Tools</button>
+    </nav>
+
+    <!-- Content Panel -->
+    <main class="panel-content">
+
+      <!-- 1. OVERVIEW PANEL -->
+      <section id="tab-overview" class="tab-panel active">
+        <!-- Quick Tech Indicators -->
+        <div class="grid-tech-specs">
+          <div class="spec-card">
+            <span class="spec-title">SRA Enabled</span>
+            <span id="spec-sra" class="spec-value spec-unknown">--</span>
+          </div>
+          <div class="spec-card">
+            <span class="spec-title">Lazy Loading</span>
+            <span id="spec-lazy" class="spec-value spec-unknown">--</span>
+          </div>
+          <div class="spec-card">
+            <span class="spec-title">Collapse Empty Divs</span>
+            <span id="spec-collapse" class="spec-value spec-unknown">--</span>
+          </div>
+        </div>
+
+        <!-- Metric Counter Grid -->
+        <div class="grid-metrics">
+          <div class="metric-card">
+            <span class="metric-num" id="metric-total">0</span>
+            <span class="metric-label">Total GPT Slots</span>
+          </div>
+          <div class="metric-card card-filled">
+            <span class="metric-num text-success" id="metric-filled">0</span>
+            <span class="metric-label">Filled Ads</span>
+          </div>
+          <div class="metric-card card-empty">
+            <span class="metric-num text-danger" id="metric-empty">0</span>
+            <span class="metric-label">Empty Ads</span>
+          </div>
+          <div class="metric-card card-sticky">
+            <span class="metric-num text-info" id="metric-sticky">0</span>
+            <span class="metric-label">Sticky Ads</span>
+          </div>
+        </div>
+
+        <!-- Policy Warnings & Diagnostics -->
+        <div class="diagnostics-section">
+          <h2>Ad Ops Diagnostics</h2>
+          <div id="diagnostics-list" class="diagnostics-list">
+            <div class="diagnostic-placeholder">Scanning webpage for Google Ad Manager implementation issues...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. AD SLOTS PANEL -->
+      <section id="tab-slots" class="tab-panel">
+        <div class="search-filter-container">
+          <input type="text" id="slot-search" placeholder="Filter slots by ID or Ad Unit Path..." class="search-input">
+        </div>
+        <div id="slots-list" class="slots-list">
+          <div class="empty-state">No active GPT ad slots found on this page. Make sure GPT is implemented and configured.</div>
+        </div>
+      </section>
+
+      <!-- 3. RESPONSIVE MAPPINGS PANEL -->
+      <section id="tab-responsive" class="tab-panel">
+        <div class="responsive-header">
+          <h2>Responsive Size Mapping Inspector</h2>
+          <p class="description">Displays viewport breakpoints defined in <code>googletag.sizeMapping()</code> for responsive slots.</p>
+        </div>
+        <div id="responsive-list" class="responsive-list">
+          <div class="empty-state">No responsive size mappings detected. Ads on this page are configured with static dimensions.</div>
+        </div>
+      </section>
+
+      <!-- 4. LIVE LOGS PANEL -->
+      <section id="tab-logs" class="tab-panel">
+        <div class="logs-header">
+          <h2>GPT Live Event Feed</h2>
+          <div class="logs-actions">
+            <button id="btn-clear-logs" class="btn-small">Clear</button>
+          </div>
+        </div>
+        <div class="search-filter-container">
+          <input type="text" id="log-search" placeholder="Search event logs..." class="search-input">
+        </div>
+        <div id="logs-list" class="logs-list">
+          <div class="empty-state">Waiting for GPT events... Refresh the page or trigger ad calls to see live events.</div>
+        </div>
+      </section>
+
+      <!-- 5. TOOLS & ADVANCED PANEL -->
+      <section id="tab-tools" class="tab-panel">
+        <div class="tools-card">
+          <h2>Visual Highlight Overlay</h2>
+          <p class="tools-desc">Inject visual debugging boxes directly on the page: Green for filled, Red for empty, and Blue for sticky ads.</p>
+          <div class="toggle-container">
+            <span class="toggle-label">Enable Visual Highlighting</span>
+            <label class="switch">
+              <input type="checkbox" id="toggle-highlight">
+              <span class="slider round"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="tools-card">
+          <h2>Debug Data Export</h2>
+          <p class="tools-desc">Copy or export the raw JSON payload of all detected GPT slots, sizes, mappings, configurations, and events.</p>
+          <div class="tools-actions-row">
+            <button id="btn-copy-debug" class="btn-primary-small">📋 Copy Debug Data</button>
+            <button id="btn-export-json" class="btn-secondary-small">💾 Export JSON</button>
+          </div>
+        </div>
+
+        <div class="about-card">
+          <div class="about-logo-row">
+            <img src="../assets/icon-48.png" alt="Monetiscope logo">
+            <div>
+              <h3>Monetiscope Ad Inspector</h3>
+              <p>Version 1.0.0 | By Monetiscope</p>
+            </div>
+          </div>
+          <p class="about-desc">A professional suite to inspect, optimize, and debug Google Ad Manager implementations. Supercharge your publisher monetization strategy.</p>
+          <div class="about-links">
+            <a href="https://monetiscope.com" target="_blank">Monetiscope Website</a> &bull;
+            <a href="../pages/privacy.html" target="_blank">Privacy Policy</a> &bull;
+            <a href="../pages/terms.html" target="_blank">Terms of Service</a>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer Status -->
+    <footer class="footer">
+      <span>Status: <strong id="connection-status" class="text-neutral">Scanning Tab</strong></span>
+      <a href="https://monetiscope.com" target="_blank" class="brand-link">Monetiscope Website</a>
+    </footer>
+
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

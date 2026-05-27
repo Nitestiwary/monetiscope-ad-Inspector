@@ -1,0 +1,21 @@
+# OS Metadata
+.DS_Store
+Thumbs.db
+db.db
+Desktop.ini
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Build & Scripts caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
