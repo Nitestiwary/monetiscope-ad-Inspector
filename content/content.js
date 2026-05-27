@@ -268,32 +268,102 @@
       // Create overlay element
       const overlay = document.createElement('div');
       overlay.id = `monetiscope-overlay-${slot.slotId}`;
+      overlay.className = 'monetiscope-ad-overlay';
       overlay.style.position = 'absolute';
       overlay.style.boxSizing = 'border-box';
       overlay.style.border = borderStyle;
       overlay.style.backgroundColor = bgStyle;
-      overlay.style.pointerEvents = 'none'; // Click-through
+      overlay.style.pointerEvents = 'none'; // Click-through for background overlay
       overlay.style.zIndex = '999999999';
-      overlay.style.transition = 'all 0.15s ease-out';
+      overlay.style.transition = 'opacity 0.15s ease-out';
       overlay.style.borderRadius = '4px';
 
-      // Small details badge inside overlay
-      const label = document.createElement('div');
-      label.style.position = 'absolute';
-      label.style.top = '-20px';
-      label.style.left = '0';
-      label.style.backgroundColor = labelBg;
-      label.style.color = '#FFFFFF';
-      label.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      label.style.fontSize = '10px';
-      label.style.fontWeight = 'bold';
-      label.style.padding = '2px 6px';
-      label.style.borderRadius = '3px';
-      label.style.whiteSpace = 'nowrap';
-      label.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15)';
-      label.innerText = `${slot.slotId} [${labelText}]`;
+      // 4a. Build Premium Floating Details Card (Pointer events = auto for interaction)
+      const labelCard = document.createElement('div');
+      labelCard.className = 'monetiscope-label-card';
+      labelCard.style.position = 'absolute';
+      labelCard.style.pointerEvents = 'auto'; // Re-enable clicks inside the card!
+      labelCard.style.backgroundColor = '#1E293B'; // Slate 800
+      labelCard.style.color = '#F1F5F9';
+      labelCard.style.border = '1px solid rgba(255, 255, 255, 0.15)';
+      labelCard.style.borderRadius = '6px';
+      labelCard.style.padding = '8px 12px';
+      labelCard.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif';
+      labelCard.style.fontSize = '11px';
+      labelCard.style.lineHeight = '1.4';
+      labelCard.style.width = '310px';
+      labelCard.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1)';
+      labelCard.style.zIndex = '999999999';
+      
+      // Determine delivery method (Dynamic Allocation vs standard)
+      let adSource = 'Google Ad Manager';
+      if (slot.isEmpty === false) {
+        const isLongId = slot.lineItemId && (!isNaN(slot.lineItemId) && Number(slot.lineItemId) > 1000000000);
+        if (slot.lineItemId === 'dynamic' || isLongId) {
+          adSource = 'Dynamic Allocation';
+        }
+      }
 
-      overlay.appendChild(label);
+      // Extract Publisher Network Code and format path
+      let networkCode = '';
+      let formattedPath = slot.adUnitPath;
+      const match = slot.adUnitPath.match(/^\/([^\/]+)(.*)$/);
+      if (match) {
+        networkCode = match[1];
+        const cleanPath = match[2] ? match[2].substring(1) : '';
+        formattedPath = `<span style="color:#94A3B8;">${networkCode} &gt;</span> <strong style="color:#F59E0B; font-weight:700;">${escapeHtml(cleanPath)}</strong>`;
+      } else {
+        formattedPath = `<strong style="color:#F59E0B; font-weight:700;">${escapeHtml(slot.adUnitPath)}</strong>`;
+      }
+
+      // Size metrics & filled indicators
+      let badgeColor = '#EF4444'; // Red
+      let statusText = 'Empty Slot';
+      if (slot.isEmpty === false) {
+        badgeColor = '#10B981'; // Green
+        statusText = `Filled: ${slot.renderedSize || 'Rendered'}`;
+      }
+
+      // Clickable Creative and Line Item GAM Delivery Tool hyper-paths
+      let deliveryToolsHtml = '';
+      if (slot.isEmpty === false && slot.creativeId) {
+        const GAM_URL = networkCode ? `https://admanager.google.com/${networkCode}#delivery` : 'https://admanager.google.com';
+        deliveryToolsHtml = `
+          <div style="display:flex; justify-content:space-between; margin-top:6px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:6px; font-size:10px;">
+            <span>Creative: <a href="${GAM_URL}/CreativeDetail/creativeId=${slot.creativeId}" target="_blank" style="color:#3B82F6; text-decoration:none; font-family:monospace; font-weight:bold; border-bottom:1px dotted #3B82F6;">${slot.creativeId}</a></span>
+            <span>Line Item: <a href="${GAM_URL}/LineItemDetail/lineItemId=${slot.lineItemId}" target="_blank" style="color:#3B82F6; text-decoration:none; font-family:monospace; font-weight:bold; border-bottom:1px dotted #3B82F6;">${slot.lineItemId}</a></span>
+          </div>
+        `;
+      }
+
+      labelCard.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+          <span style="font-weight:800; color:#FFFFFF; text-transform:uppercase; font-size:9px; letter-spacing:0.05em; font-family:sans-serif;">${adSource}</span>
+          <span style="background-color:${badgeColor}; color:#FFFFFF; font-size:9px; font-weight:bold; padding:1px 6px; border-radius:4px; text-transform:uppercase;">${statusText}</span>
+        </div>
+        <div class="monetiscope-copyable-path" style="font-family:monospace; font-size:10px; cursor:pointer; word-break:break-all; margin-bottom:4px; padding:2px 4px; background-color:rgba(0,0,0,0.2); border-radius:3px;" title="Click to copy path">
+          ${formattedPath}
+        </div>
+        <div style="color:#94A3B8; font-size:9px;">Div ID: <span style="font-family:monospace; color:#E2E8F0;">${escapeHtml(slot.slotId)}</span></div>
+        ${deliveryToolsHtml}
+      `;
+
+      // Copy path helper
+      labelCard.querySelector('.monetiscope-copyable-path').addEventListener('click', function(e) {
+        e.stopPropagation();
+        navigator.clipboard.writeText(slot.adUnitPath);
+        
+        // Visual copied feedback
+        const originalHtml = this.innerHTML;
+        this.style.color = '#10B981';
+        this.innerHTML = '<span style="font-weight:bold;">✔ Copied Ad Unit Path!</span>';
+        setTimeout(() => {
+          this.style.color = '';
+          this.innerHTML = originalHtml;
+        }, 1000);
+      });
+
+      overlay.appendChild(labelCard);
       document.body.appendChild(overlay);
       activeOverlays.push(overlay);
 
@@ -311,6 +381,33 @@
     overlay.style.left = `${rect.left + scrollLeft}px`;
     overlay.style.width = `${rect.width}px`;
     overlay.style.height = `${rect.height}px`;
+
+    // Reposition floating card dynamically to avoid off-screen cutoffs
+    const labelCard = overlay.querySelector('.monetiscope-label-card');
+    if (labelCard) {
+      if (rect.top < 86) {
+        // Under 86px from top boundary - position card INSIDE the top-left of the ad slot
+        labelCard.style.top = '4px';
+        labelCard.style.left = '4px';
+        labelCard.style.boxShadow = '0 4px 6px rgba(0,0,0,0.3)';
+      } else {
+        // Place beautifully ABOVE the ad container
+        labelCard.style.top = '-82px';
+        labelCard.style.left = '0';
+        labelCard.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1)';
+      }
+    }
+  }
+
+  // Safe HTML escapes helper
+  function escapeHtml(unsafe) {
+    if (typeof unsafe !== 'string') return String(unsafe);
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
   }
 
   function repositionOverlays() {
